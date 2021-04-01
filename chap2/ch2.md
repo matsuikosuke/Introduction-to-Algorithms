@@ -748,63 +748,57 @@ T(n) &=& \Theta(1) + T(n-1) + \Theta(n) \\
 ## A2.3-5
 
 ```rust
-fn search(v: i8)-> usize {
-    let a: [i8; 6] = [26, 31, 41, 41, 59, 58];
-    println!("{:?}", &a[0..6]);
-    
+fn search(x: i32, v: &mut Vec<i32>)-> usize {
+    //println!("v={:?}", &v);
     let mut start_index;
     let mut end_index;
     let mut search_index;
-    
+
     start_index = 0;
-    end_index = a.len()-1;
-    
+    end_index = v.len()-1;
+
+    //println!("v={:?}, x={}, end_index={}", &v, x, end_index);
+
     loop {
-        search_index = start_index + (end_index+1-start_index)/2;
-        println!("start_index = {}, end_index = {}, search_index = {}", start_index, end_index, search_index);
-        
-        if search_index == 0 || search_index == a.len()-1 {
-            break;
-        }
-        
-        if v == a[search_index] {
+        search_index = start_index + (end_index-start_index)/2;
+        println!("search_index={}", search_index);
+
+         if x == v[search_index] {
             return search_index+1;
-        } else if v > a[search_index] {
-            start_index = search_index+1;
+         } else if x > v[search_index] {
+            if search_index == end_index {
+                return 0;
+            } else {
+                start_index = search_index+1;
+            }
         } else {
-            end_index = search_index-1;
-        }
-        
-    }
-    
-    for i in start_index..end_index+1 {
-        //println!("start_index = {}, end_index = {}, search_index = {}", start_index, end_index, search_index);
-        //println!("a[{}] = {}", i, a[i]);
-        if a[i] == v
-        {
-            return i+1;
+            if search_index == start_index {
+                return 0;
+            } else {
+                end_index = search_index-1;
+            }
         }
     }
-    
-    return 0;
 }
 
 fn main()
 {
-    let v = 26;
-    println!("{}は{}番目の値", v, search(v));
+    let mut v: Vec<i32> = vec![26, 31, 41, 41, 59, 58];
     
-    let v = 31;
-    println!("{}は{}番目の値", v, search(v));
+    let x = 26;
+    println!("{}は{}番目の値", x, search(x, &mut v));
     
-    let v = 41;
-    println!("{}は{}番目の値", v, search(v));
+    let x = 31;
+    println!("{}は{}番目の値", x, search(x, &mut v));
     
-    let v = 59;
-    println!("{}は{}番目の値", v, search(v));
+    let x = 41;
+    println!("{}は{}番目の値", x, search(x, &mut v));
+    
+    let x = 59;
+    println!("{}は{}番目の値", x, search(x, &mut v));
 
-    let v = 100;
-    println!("{}は{}番目の値", v, search(v));
+    let x = 100;
+    println!("{}は{}番目の値", x, search(x, &mut v));
 }
 ```
 
@@ -914,3 +908,73 @@ fn main() {
 
 配列を半分にしていくことを繰り返す場合の計算の次元は、 A2.3-5 の場合と同様に $\Theta(\lg n)$ です。
 それをforループでn-1回繰り返すので、このアルゴリズムの計算の次元は、 $\Theta(n \lg n)$ になります。
+
+## A2.3-7
+まずは配列をソートします。この計算の次元は $\Theta(n \lg n)$ になります。
+
+ソート済み配列から１つの要素 $v[i]$ を選んで、目標値 $x$ との差分 $x-v[i]$ を取ります。そして、残りの配列要素から $x-v[i]$ と一致する値を探します。
+
+ソート済み配列から一致する値を探すのは、A2.3-5の探索アルゴリズムと同じです。その計算次元は $\Theta(\lg n)$ です。
+
+一致する値がなければ、要素 $v[i]$ を削除した配列から、再度 $v[i+1]$ を選んで同じことを繰り返します。
+
+一致する値を見つけるか、比較する要素がなくなれば（配列のサイズがnならば、n-1回の要素選択をするまで）、繰り返しは終了します。
+
+この繰り返しの計算の次元は、 $\Theta(n)$ になります。
+
+よって全体の計算の次元は $\Theta(n \lg n)$ になります。
+
+```rust
+fn search_sum(x: i32, v: &mut Vec<i32>) {
+    //println!("v={:?}", &v);
+    let mut start_index;
+    let mut end_index;
+    let mut search_index;
+
+    for j in 0..v.len()-1 {
+        let key = x-v[j];
+
+        start_index = j;
+        end_index = v.len()-1;
+        //println!("v={:?}, x={}, end_index={}", &v, x, end_index);
+    
+        loop {
+            search_index = start_index + (end_index-start_index)/2;
+            //println!("search_index={}", search_index);
+    
+             if key == v[search_index] {
+                println!("{} = v[{}]({}) + v[{}]({})", x, j, v[j], search_index, v[search_index]);
+                return ;
+             } else if key > v[search_index] {
+                if search_index == end_index {
+                    break;
+                } else {
+                    start_index = search_index+1;
+                }
+            } else {
+                if search_index == start_index {
+                    break;
+                } else {
+                    end_index = search_index-1;
+                }
+            }
+        }
+    }
+    
+    println!("notihng");
+}
+
+fn main()
+{
+    let mut v: Vec<i32> = vec![31, 41, 26, 59, 41, 58];
+    println!("v={:?}", &v);
+    
+    insert_sort(&mut v);
+    println!("v={:?}", &v);
+    
+    let x = 1000; //85; //100; // 
+    search_sum(x, &mut v);
+}
+```
+
+ここでA.2.3-6の `insert_sort`関数を使用しています。
