@@ -1,9 +1,3 @@
----
-title: 個人的勉強メモ「アルゴリズム・イントロダクション」をRustで実装する：2章
-tags: Rust アルゴリズム
-author: Kosuke_Matsui
-slide: false
----
 # 記事の概要
 
 アルゴリズムイントロダクション 第3版 総合版：世界標準MIT教科書のアルゴリズムをRustで実装しながら勉強します。
@@ -572,7 +566,7 @@ sorted v=[3, 9, 26, 38, 41, 49, 52, 57]
 
 ```rust
 fn merge(v: &mut Vec<i32>, p: usize, q: usize, r: usize) {//p=0,q=2,r=5
-    println!("v={:?}, p={}, q={}, r={}", &v[0..r+1], p,q,r);
+    println!("v={:?}, p={}, q={}, r={}", &v[p..r+1], p,q,r);
     let n1 = q-p+1; //2-0+1=3
     let n2 = r-q; //5-1-2=3
     
@@ -978,3 +972,149 @@ fn main()
 ```
 
 ここでA.2.3-6の `insert_sort`関数を使用しています。
+
+
+## A2-1
+`insert_merge_sort`関数は引数kで指定した回数だけ分割を行います。
+0を代入すれば1回も分割をせずに、挿入ソートを実行します。
+tは分割回数で、必ず最初は0を代入します。
+
+
+```rust
+fn insert_sort(v: &mut Vec<i32>, p: usize, r: usize) {
+    println!("insert v={:?}, p={}, r={}", &v[p..r+1], p, r);
+    for j in p+1..r+1 {//14..15
+        let key = v[j];
+        let mut i = j;
+
+        while i>p && v[i-1]>key
+        {
+            v[i] = v[i-1];
+            i = i-1;
+        }
+        v[i] = key;
+    }
+    println!("insert sorted v={:?}", &v[p..r+1]);
+}
+
+fn merge(v: &mut Vec<i32>, p: usize, q: usize, r: usize) {//p=0,q=2,r=5
+    //println!("v={:?}, p={}, q={}, r={}", &v[p..r+1], p,q,r);
+    let n1 = q-p+1;
+    let n2 = r-q;
+
+    let mut vl: Vec<i32> = Vec::new();
+    let mut vr: Vec<i32> = Vec::new();
+
+    for i in 0..n1 {
+        vl.push(v[p+i]);
+    }
+
+    for i in 0..n2 {
+        vr.push(v[q+1+i]);
+    }
+
+    vl.push(0xFFFF);
+    vr.push(0xFFFF);
+
+    //println!("vl={:?}", &vl);
+    //println!("vr={:?}", &vr);
+
+    let mut index_al = 0;
+    let mut index_ar = 0;
+
+    for k in p..r+1 {
+        if vl[index_al] <= vr[index_ar] {
+            v[k] = vl[index_al];
+            //println!("vl[{}]={}->v[{}], v={:?}", index_al, vl[index_al], k, &v[0..r+1]);
+            index_al += 1;
+        } else {
+            v[k] = vr[index_ar];
+            //println!("vr[{}]={}->v[{}], v={:?}", index_ar, vr[index_ar], k, &v[0..r+1]);
+            index_ar += 1;
+        }
+    }
+}
+
+fn insert_merge_sort(v: &mut Vec<i32>, p: usize, r: usize, k: usize, t: usize) {
+
+    if p<r {
+        if k<=t {
+            insert_sort(v, p, r);
+        } else {
+                let q = (p+r)/2;
+                insert_merge_sort(v, p, q, k, t+1);
+                insert_merge_sort(v, q+1, r, k, t+1);
+                merge(v, p, q, r);
+        }
+    }
+}
+
+fn main() {
+    let mut v: Vec<i32> = vec![3,7,100,5,9,1,99,12,45,76,98,1,34,76,4,900,342];
+    println!("v={:?}", &v);
+
+    let len = v.len();
+    let r = len-1;
+    insert_merge_sort(&mut v, 0, r, 2, 0);
+
+    println!("sorted v={:?}", &v);
+}
+```
+
+### a
+
+まず、サイズkの挿入ソートの最悪計算時間は  $\Theta(k^2)$ です。それがn/k個あるので $\Theta(k^2*n/k) = \Theta(nk)$ になります。
+
+### b
+
+マージソートの最悪計算時間は、再帰レベルの数に比例します。
+サイズnの再帰レベルの数は $\lg n$  です。
+サイズnをn/k個までに分割したのならば、そこに至るまでの再帰レベルの数は $\lg k$  です。
+
+よってソート済みのn/k個の再帰レベルの数は、サイズnの再帰レベルの数からサイズkの再帰レベルの数を引いたもので以下になります
+
+```math
+\begin{eqnarray}
+\lg n - \lg k &=& \lg n/k
+\end{eqnarray}
+```
+
+そしてサイズkの配列の計算の次元は $k = cn$ なので  $\Theta(n)$ になります。よってマージソートの最悪計算時間は $\Theta(n \lg (n/k))$  になります。
+
+### c
+
+$\Theta(nk + n \lg (n/k)) = \Theta(n \lg n)$ と仮定すれば
+
+
+```math
+\begin{eqnarray}
+&& \Theta(nk + n \lg (n/k)) = \Theta(n \lg n) \\
+&& \Theta(k + \lg (n/k)) = \Theta(\lg n) \\
+&& \Theta(k) + \Theta(\lg n) - \Theta(\lg k) = \Theta(\lg n) \\
+&& \Theta(k) + \Theta(\lg n) = \Theta(\lg n) \\
+\end{eqnarray}
+```
+
+よって $\Theta(k)$ も  $\Theta(\lg n)$ に比例していないと、上記等式は成立しません。
+
+```math
+\begin{eqnarray}
+k \propto \lg n
+\end{eqnarray}
+```
+
+### d
+
+kの極大値を求めればいいので、
+
+
+```math
+\begin{eqnarray}
+0 &=& (c_1 nk + c_2 n \lg(n/k))' \\
+&=& c_1 n + c_2 n \frac{k}{n} \frac{(-n)}{k^2} \\
+&=& c_1 n - c_2  \frac{n}{k} \\
+&=& c_1 -  \frac{c_2}{k} \\
+\end{eqnarray}
+```
+
+を満たすようにkを選びます

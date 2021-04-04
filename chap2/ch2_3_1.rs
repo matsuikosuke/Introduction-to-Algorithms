@@ -1,5 +1,5 @@
 fn merge(v: &mut Vec<i32>, p: usize, q: usize, r: usize) {
-    println!("v={:?}, p={}, q={}, r={}", &v[0..r+1], p,q,r);
+    println!("v={:?}, p={}, q={}, r={}", &v[p..r+1], p,q,r);
     let n1 = q-p+1;
     let n2 = r-q;
     
