@@ -1,3 +1,9 @@
+---
+title: 個人的勉強メモ「アルゴリズム・イントロダクション」をRustで実装する：4章
+tags: アルゴリズムイントロダクション
+author: Kosuke_Matsui
+slide: false
+---
 # 記事の概要
 アルゴリズムイントロダクション 第3版 総合版：世界標準MIT教科書のアルゴリズムをRustで実装しながら勉強したので、その結果を整理しました。
 まとめた内容には確実に誤りがあると思われるので、参照にあたっては、あらかじめご了承ください。
@@ -1637,7 +1643,7 @@ $d/c=5$の場合、$-2c+1 \leq -5$なので、$c \geq 3$の場合に成立します。
 ## A4.4-4
 
 再帰木の各レベルのサイズは$1^{n-i}$です。
-再帰木のレベルの階層はサイズが$1^1$になるまで深くなるので、$n$層になります。
+再帰木のレベルの階層はサイズが$n-i=0$になるまで深くなるので、$n$層になります。
 よって$i=0,1, \cdots , n-1$です。
 また各レベルの節点の数は$2^i$です。
 レベル$n$での節点数は$2^n$です。
@@ -1693,7 +1699,7 @@ T(n)
 ```
 
 $T(n-1)$について、再帰木の各レベルのサイズは$1^{n-i}$です。
-再帰木のレベルの階層はサイズが$1^1$になるまで深くなるので、$n$層になります。
+再帰木のレベルの階層はサイズが$n-i=0$になるまで深くなるので、$n$層になります。
 よって$i=0,1, \cdots , n-1$です。
 また各レベルの節点の数は$2$です。（$T(n/2)$による節点も大雑把な推定として含めてしまいます。）
 レベル$n$での節点数は$2^n$です。
@@ -2024,12 +2030,498 @@ T(n)
 
 になります。
 
-マスター定の３つのパターンは、葉のコスト$\Theta(n^{\log_b a})$が主要コストになる場合、根のコスト$f(n)$が葉のコスト$\Theta(n^{\log_b a})$と等しい場合、根のコスト$f(n)$が主要コストになる場合を表していると解釈できます。
+マスター定理の３つのパターンは、葉のコスト$\Theta(n^{\log_b a})$が主要コストになる場合、根のコスト$f(n)$が葉のコスト$\Theta(n^{\log_b a})$と等しい場合、根のコスト$f(n)$が主要コストになる場合を表していると解釈できます。
 
+
+### 補題4.3
+
+#### 場合1
+$b^{\log_b a} = a^{\log_b b} = a$と和の公式$\sum_{i=0}^t x^i = (x^t -1)/(x -1)$を用いると、本文の式展開より
+
+```math
+\begin{eqnarray}
+g(n) 
+&=& O \Bigl( n^{\log_b a - \epsilon} \frac{n^{\epsilon} -1}{b^{\epsilon} -1} \Bigl) \\
+&=& O( n^{\log_b a - \epsilon} n^{\epsilon} ) \\
+&=& O( n^{\log_b a} ) \\
+\end{eqnarray}
+```
+
+となります。
+
+#### 場合2
+$b>1$より$\log_b n \geq \log_2 n$となるので、$\Theta(\log_b n)$は最大で$\Theta(\log_2 n)$を超えないので与式が成立します
+
+#### 場合3
+正則性から$f(n/b^j) \leq (c/a)^j f(n)$を満たします。
+再帰木のサイズ$n/b^{j-1}$が最小になった時の根の部分の計算サイズを$f(minimum) \leq O(1)$とします。
+本文の計算により与式が成立します。
+
+## フロア関数とシーリング関数
+
+### フロア関数
+
+前節の漸化式を$T(n) = aT(\lceil n/b \rceil)+f(n)$の漸化式に拡張します。
+
+$\lceil n/b \rceil \geq n/b$なので、下界はベキ乗の場合と同じです。
+よって上界のみを考えます。
+
+j番目の要素を$n_j = \lceil n_{j-1}/b \rceil$とします。呼び出しの深さ求めるため、$n_j$のサイズが$O(1)$になるjを求めます。
+不等式$\lceil x \rceil \leq x+1$より
+
+```math
+\begin{eqnarray}
+n_j &\leq& \frac{n}{b^j} + \sum_{i=0}^{j-1} \frac{1}{b^i} \\
+&<& \frac{n}{b^j} + \sum_{i=0}^{\infty} \frac{1}{b^i} \\
+&=& \frac{n}{b^j}  + \frac{b}{b-1} 
+\end{eqnarray}
+```
+
+$j=\lfloor \log_b n \rfloor$とすると、本書の計算より$n_j=O(1)$になるので、深さは$\lfloor \log_b n \rfloor$になります。この木全体のコストは
+
+
+```math
+\begin{eqnarray}
+T(n) 
+&=& \sum_{j=0}^{\lfloor \log_b n \rfloor-1} a^j f(n/b^j) + \Theta(n^{\log_b a})
+\end{eqnarray}
+```
+
+になります。
+
+
+#### 場合3
+$n$が最小サイズの$b+b/(b-1)$より大きい場合、正則性から$f(\lceil n/b \rceil) \leq c f(n)$を満たすとします。
+以降はベキ乗の場合と同様の計算で与式が成立します。
+
+#### 場合2
+$f(n_j) = O((n/b^j)^{\log_b a})$を証明します。
+$j \leq \lfloor \log_b n \rfloor$ならば$b^j \leq b^{\lfloor \log_b n \rfloor} \leq b^{\log_b n} = n$です。
+
+これを用いて、本書の計算より証明が完了します。
+
+#### 場合1
+$f(n_j) = O((n/b^j)^{\log_b a -\epsilon})=O(n^{log_b a}/a^j \cdot b^{j\epsilon}/n^{\epsilon})$を証明します。
+$j \leq \lfloor \log_b n \rfloor$ならば$b^j \leq b^{\lfloor \log_b n \rfloor} \leq b^{\log_b n} = n$です。
+これを用いて、
+
+```math
+\begin{eqnarray}
+f(n_j) &\leq& c \Bigl( \frac{n}{b^j} + \frac{b}{b-1} \Bigl)^{\log_b a -\epsilon} \\
+&=& c \Bigl( \frac{n}{b^j} \Bigl( 1 + \frac{b^j}{n} \frac{b}{b-1} \Bigl) \Bigl)^{\log_b a -\epsilon} \\
+&=& c \Bigl( \frac{n^{\log_b a -\epsilon}}{b^{j (\log_b a -\epsilon)}} \Bigl) \Bigl( 1 + \frac{b^j}{n} \frac{b}{b-1} \Bigl)^{\log_b a -\epsilon} \\
+&\leq& c \Bigl( \frac{n^{\log_b a -\epsilon}}{b^{j (\log_b a -\epsilon)}} \Bigl) \Bigl( 1 + \frac{b}{b-1} \Bigl)^{\log_b a -\epsilon} \\
+&=& c \Bigl( 
+\frac{n^{\log_b a}}{n^{\epsilon}} 
+\frac{b^{j \epsilon}}{a^j} 
+\Bigl) 
+\Bigl( 1 + \frac{b}{b-1} \Bigl)^{\log_b a -\epsilon} \\
+&=& O((n/b^j)^{\log_b a -\epsilon})
+\end{eqnarray}
+```
+
+になります。
+
+
+
+### シーリング関数
+
+前節の漸化式を$T(n) = aT(\lfloor n/b \rfloor)+f(n)$の漸化式に拡張します。
+
+$\lfloor n/b \rfloor \leq n/b$なので、上界はベキ乗の場合と同じです。
+よって下界のみを考えます。
+
+j番目の要素を$n_j = \lfloor n_{j-1}/b \rfloor$とします。呼び出しの深さ求めるため、$n_j$のサイズが$O(1)$になるjを求めます。
+不等式$\lfloor x \rfloor \geq x-1$より
+
+```math
+\begin{eqnarray}
+n_j &\geq& \frac{n}{b^j} - \sum_{i=0}^{j-1} \frac{1}{b^i} \\
+&>& \frac{n}{b^j} - \sum_{i=0}^{\infty} \frac{1}{b^i} \\
+&=& \frac{n}{b^j}  - \frac{b}{b-1} 
+\end{eqnarray}
+```
+
+$j=\lceil \log_b n \rceil$とすると、本書の計算より$n_j=O(1)$
+
+```math
+\begin{eqnarray}
+n_{\lceil \log_b n \rceil} &>& \frac{n}{b^{\lceil \log_b n \rceil}} - \frac{b}{b-1}  \\
+&>& \frac{n}{b^{\log_b n + 1}} - \frac{b}{b-1}  \\
+&=& \frac{1}{b} - \frac{b}{b-1} \\
+&=& O(1)
+\end{eqnarray}
+```
+
+になるので、深さは$\lceil \log_b n \rceil$になります。この木全体のコストは
+
+```math
+\begin{eqnarray}
+T(n) 
+&=& \sum_{j=0}^{\lceil \log_b n \rceil-1} a^j f(n/b^j) + \Theta(n^{\log_b a})
+\end{eqnarray}
+```
+
+になります。
+
+
+
+#### 場合3
+$n$が最大サイズの$b-b/(b-1)$より小さい場合、正則性から$f(\lfloor n/b \rfloor) \leq c f(n)$を満たすとします。
+以降はベキ乗の場合と同様の計算で与式が成立します。
+
+#### 場合2
+$f(n_j) = O((n/b^j)^{\log_b a})$を証明します。
+$j \geq \lceil \log_b n \rceil$ならば$b^j \geq b^{\lceil \log_b n \rceil} \geq b^{\log_b n} = n$です。
+これを用いて、
+
+
+```math
+\begin{eqnarray}
+f(n_j) &\leq& c \Bigl( \frac{n}{b^j} - \frac{b}{b-1} \Bigl)^{\log_b a} \\
+&=& c \Bigl( \frac{n}{b^j} \Bigl( 1 - \frac{b^j}{n} \frac{b}{b-1} \Bigl) \Bigl)^{\log_b a} \\
+&=& c \Bigl( \frac{n^{\log_b a -\epsilon}}{b^{j (\log_b a)}} \Bigl) \Bigl( 1 - \frac{b^j}{n} \frac{b}{b-1} \Bigl)^{\log_b a} \\
+&\leq& c \Bigl( \frac{n^{\log_b a}}{b^{j (\log_b a)}} \Bigl) \Bigl( 1 - \frac{b}{b-1} \Bigl)^{\log_b a} \\
+&=& c \Bigl( 
+\frac{n^{\log_b a}}{a^j} 
+\Bigl) 
+\Bigl( 1 - \frac{b}{b-1} \Bigl)^{\log_b a} \\
+&=& O(n^{\log_b a}/a^j)
+\end{eqnarray}
+```
+
+になります。
+
+#### 場合1
+$f(n_j) = O((n/b^j)^{\log_b a -\epsilon})=O(n^{log_b a}/a^j \cdot b^{j\epsilon}/n^{\epsilon})$を証明します。
+$j \geq \lceil \log_b n \rceil$ならば$b^j \geq b^{\lceil \log_b n \rceil} \geq b^{\log_b n} = n$です。
+これを用いて、
+
+```math
+\begin{eqnarray}
+f(n_j) &\leq& c \Bigl( \frac{n}{b^j} - \frac{b}{b-1} \Bigl)^{\log_b a -\epsilon} \\
+&=& c \Bigl( \frac{n}{b^j} \Bigl( 1 - \frac{b^j}{n} \frac{b}{b-1} \Bigl) \Bigl)^{\log_b a -\epsilon} \\
+&=& c \Bigl( \frac{n^{\log_b a -\epsilon}}{b^{j (\log_b a -\epsilon)}} \Bigl) \Bigl( 1 - \frac{b^j}{n} \frac{b}{b-1} \Bigl)^{\log_b a -\epsilon} \\
+&\leq& c \Bigl( \frac{n^{\log_b a -\epsilon}}{b^{j (\log_b a -\epsilon)}} \Bigl) \Bigl( 1 - \frac{b}{b-1} \Bigl)^{\log_b a -\epsilon} \\
+&=& c \Bigl( 
+\frac{n^{\log_b a}}{n^{\epsilon}} 
+\frac{b^{j \epsilon}}{a^j} 
+\Bigl) 
+\Bigl( 1 - \frac{b}{b-1} \Bigl)^{\log_b a -\epsilon} \\
+&=& O((n/b^j)^{\log_b a -\epsilon})
+\end{eqnarray}
+```
+
+になります。
+
+## A4.6-1
+$n_j$の簡単で正確な式という意味が分かりませんでした。
+本書で示された式が既に簡単で正確に見えます。
+簡単とか正確の定義が分からないので、解答保留です。
+
+
+```math
+\begin{eqnarray}
+n_j = \left \{
+\begin{array}{l}
+n \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (j=0)\\
+\lceil n_{j-1}/b \rceil
+ \leq (n_{j-1}+b-1)/b \ \ \ \ \ \ \ \ (j>0)
+\end{array}
+\right.
+\end{eqnarray}
+```
+
+## A4.6-2
+問題文で解は$b$のベキ乗に限定してもいいと書いてあるので$n=b^m$とします。
+
+$T(n) \leq n^{\log_b a} \lg^{k+1} n - d n^{\log_b a} \lg^k n$と仮定します。
+
+```math
+\begin{eqnarray}
+T(n) &=& a T(b^{m-1})+f(b^m) \\
+&\leq& a(b^{(m-1)\log_b a} \lg^{k+1} b^{m-1} - d b^{(m-1) \log_b a} \lg^k b^{m-1}) + c b^{m \log_b a}\lg^k b^m \\
+&=& a(a^{m-1} \lg^{k+1} b^{m-1} - d a^{m-1} \lg^k b^{m-1}) + c a^m \lg^k b^m \\
+\end{eqnarray}
+```
+
+この先の式展開が分からないので解答保留です。
+
+
+## A4.6-3
+解答保留です。
+
+# 4-1
+
+## a
+
+$T(n) = 2T(n/2)+n^4$
+
+$a=2$、$b=2$、$f(n)=n^4$
+
+$f(n) = \Theta(n^4)$
+
+$n^{\log_b a + \epsilon} = n^{\log_2 2 + \epsilon}$について$\epsilon = 3$に選べば$n=\Omega(n^4)$になります。
+
+$an^4 /b^4 = n^4/2^3 \leq cn^4$が$2^3 \leq c < 1$について成立するので、マスター定理より$T(n)=\Theta(n^4)$が成立します。
+
+## b
+
+$T(n) = T(7n/10)+n$
+
+$a=1$、$b=7/10$、$f(n)=n$
+
+$f(n) = \Theta(n)$
+
+$n^{\log_b a + \epsilon} = n^{\log_{7/10} 1 + \epsilon}$について$\epsilon = 1-\log_{7/10} 1 > 0$に選べば$n=\Omega(n)$になります。
+
+$an /b = 7n/10 \leq cn$が$7/10 \leq c < 1$について成立するので、マスター定理より$T(n)=\Theta(n)$が成立します。
+
+## c
+
+$T(n) = 16T(n/4)+n^2$
+
+$a=16$、$b=4$、$f(n)=n^2$
+
+$f(n) = \Theta(n^2)$
+
+$n^{\log_b a + \epsilon} = n^{\log_4 16 + \epsilon} = n^{2+ \epsilon}$について$\epsilon = 0$に選べば$n^2=\Theta(n^2)$になります。
+
+よってマスター定理より$T(n)=\Theta(n^2 \lg n)$が成立します。
+
+## d
+
+$T(n) = 7T(n/3)+n^2$
+
+$a=7$、$b=3$、$f(n)=n^2$
+
+$f(n) = \Theta(n^2)$
+
+$n^{\log_b a + \epsilon} = n^{\log_3 7 + \epsilon}$について$\epsilon = 2 - \log_3 7 > 0$に選べば$n^2=\Omega(n^2)$になります。
+
+$an^2 /b^2 = 7n^2/9 \leq cn^2$が$7/9 \leq c < 1$について成立するので、マスター定理より$T(n)=\Theta(n^2)$が成立します。
+
+## e
+
+$T(n) = 7T(n/2)+n^2$
+
+$a=7$、$b=2$、$f(n)=n^2$
+
+$f(n) = \Theta(n^2)$
+
+$n^{\log_b a + \epsilon} = n^{\log_2 7 + \epsilon} = n^{2+ \epsilon}$について$\epsilon = 2-\log_2 7 < 0$に選べば$n^2=O(n^2)$になります。
+
+よってマスター定理より$T(n)=\Theta(n^{\log_2 7})$が成立します。
+
+## f
+
+$T(n) = 2T(n/4)+\sqrt{n}$
+
+$a=2$、$b=4$、$f(n)=\sqrt{n}$
+
+$f(n) = \Theta(\sqrt{n})$
+
+$n^{\log_b a + \epsilon} = n^{\log_4 2 + \epsilon}$について$\epsilon = 0$に選べば$\sqrt{n}=\Theta(\sqrt{n})$になります。
+
+よってマスター定理より$T(n)=\Theta(\sqrt{n} \lg n)$が成立します。
+
+## g
+
+$T(n) = T(n-2)+n^2$
+
+再帰木の各レベルのサイズは$1^{n-2i}$です。
+再帰木のレベルの階層はサイズが$n-2i = 0$になるまで深くなるので、$n/2$層になります。
+よって$i=0,1, \cdots , n/2-1$です。
+また各レベルの節点の数は$1$です。
+レベル$n/2$での節点数は$1$です。
+レベル$n/2$でのコストは$T(1) = \Theta(1)$になります。
+
+木全体のコストは
+
+```math
+\begin{eqnarray}
+T(n) 
+&=& n^2 + (n-2)^2 +  \cdots + 1^2 + T(1) \\
+&=& \sum_{i=0}^{n/2-1}(2i+1)^2 + T(1) \\
+&=& 4 \sum_{i=0}^{n/2-1} i^2 + 4 \sum_{i=0}^{n/2-1} i + \sum_{i=0}^{n/2-1} 1 + T(1) \\
+&=& 4 \frac{(n/2-1)n/2(n-1)}{6} + 4 \frac{n/2(n/2+1)}{2} + n/2 -1 + T(1) \\
+&=& \Theta(n^3)
+\end{eqnarray}
+```
+
+になります。
+よって漸近解は$\Theta(n^3)$です。
+
+
+# 4-2
+
+再帰的２分アルゴリズムは$T(n)=T(n/2)+f(n)$で表現されます。$f(n)$が再帰的手続きの部分です。
+
+## a
+
+### 1. 配列をポインタで渡す場合
+
+$T(n)=T(n/2)+\theta(1)$
+
+$a=1$、$b=2$、$f(n)=\theta(1)$
+
+$n^{\log_b a + \epsilon} = n^{\log_2 1 + \epsilon}$について$\epsilon = 0$に選べば$n^0=1=\Theta(1)$になります。
+
+よってマスター定理より$T(n)=\Theta(\lg n)$が成立します。
+
+### 2. 配列をコピーで渡す場合
+
+$T(n)=T(n/2)+O(N)$
+
+$a=1$、$b=2$、$f(n)=O(N)$
+ここで$N$は配列のサイズなので定数として扱い、計算サイズを定数時間にします。
+
+$n^{\log_b a + \epsilon} = n^{\log_2 1 + \epsilon}$について$O(N)$と一致するように$\epsilon$を定めるのは難しいので、マスター定理の適用はせず、再帰木から$T(n)$を求めます。
+
+再帰木の各レベルのサイズは$n/2^i$です。
+再帰木のレベルの階層はサイズが1になるまで深くなるので、$n/2^i = 1$の場合、つまり$i = \log_2 n$層になります。
+よって$i=0,1, \cdots , \log_2 n-1$です。
+また各レベルの節点の数は$1^i$です。
+レベル$\log_2 n$での節点数は$1$です。
+レベル$\log_2 n$でのコストは$O(N)$になります。
+
+各節点のコストはサイズ$n/2^i$には依存せず、常に$O(N)$であることに注意します。
+
+木全体のコストは
+
+```math
+\begin{eqnarray}
+T(n) 
+&=& \sum_{i=0}^{\log_2 n-1} O(N) + O(N)\\
+&=& \log_2 n O(N) + O(N) \\
+&=& O(N \log_2 n)
+\end{eqnarray}
+```
+
+になります。
+よって漸近的上界は$T(n)=O(N \log_2 n)$です。
+
+ここで、もし$T(n)=T(n/2)+cn$だった場合は、各節点のコストがサイズに依存して$cn/2^i$となるので、木全体のコストは
+
+```math
+\begin{eqnarray}
+T(n) 
+&=& \sum_{i=0}^{\log_2 n-1} (1/2^i) cn + T(1)\\
+&=& 2(1-1/n) cn + T(1) 
+\end{eqnarray}
+```
+
+という全く異なる結果になります。この場合と混同しないように注意が必要です。
+
+
+### 3. 部分配列だけをコピーで渡す場合
+部分配列のサイズを$cn$として、その再帰的手続きの計算時間を$\Theta(cn)$と表現します。
+
+$T(n)=T(n/2)+\Theta(cn)$
+
+
+再帰木の各レベルのサイズは$n/2^i$です。
+再帰木のレベルの階層はサイズが1になるまで深くなるので、$n/2^i = 1$の場合、つまり$i = \log_2 n$層になります。
+よって$i=0,1, \cdots , \log_2 n-1$です。
+また各レベルの節点の数は$1^i$です。
+レベル$\log_2 n$での節点数は$1$です。
+レベル$\log_2 n$でのコストは$T(1) = \Theta(1)$になります。
+
+木全体のコストは
+
+```math
+\begin{eqnarray}
+T(n) 
+&=& \sum_{i=0}^{\log_2 n-1} (1/2^i) \Theta(n) + T(1)\\
+&=& 2(1-1/n) \Theta(n) + T(1) \\
+&=& \Theta(n)
+\end{eqnarray}
+```
+
+になります。
+よって漸近的上界は$T(n)=\Theta(n)$です。
+
+## b
+
+### 1. 配列をポインタで渡す場合
+
+$T(n)=2T(n/2)+cn+\theta(1)$
+
+$a=2$、$b=2$、$f(n)=\theta(n)$
+
+$n^{\log_b a + \epsilon} = n^{\log_2 2 + \epsilon}$について$\epsilon = 0$に選べば$n=\Theta(n)$になります。
+
+よってマスター定理より$T(n)=\Theta(n\lg n)$が成立します。
+
+### 2. 配列をコピーで渡す場合
+
+$T(n)=2T(n/2)+cn+O(N)$
+
+
+再帰木の各レベルのサイズは$n/2^i$です。
+再帰木のレベルの階層はサイズが1になるまで深くなるので、$n/2^i = 1$の場合、つまり$i = \log_2 n$層になります。
+よって$i=0,1, \cdots , \log_2 n-1$です。
+また各レベルの節点の数は$2^i$です。
+レベル$\log_2 n$での節点数は$2^{\log_2 n}= n$です。
+レベル$\log_2 n$でのコストは$n O(N)$になります。
+
+木全体のコストは
+
+```math
+\begin{eqnarray}
+T(n) 
+&=& (cn + O(N)) + (2cn/2 + O(N)) + (2^2cn/2^2 + O(N)) + \cdots  + (2^{\log_2 n-1}cn/2^{\log_2 n-1} + O(N)) + n O(N)\\
+&=& \sum_{i=0}^{\log_2 n-1} (cn + O(N)) + n O(N)\\
+&=& \log_2 n (cn + O(N)) + n O(N) \\
+&=& O(n \log_2 n) + O(N \log_2 n) + O(nN)
+\end{eqnarray}
+```
+
+になります。
+よって漸近的上界は$T(n)=\Theta(nN)$です。
+
+
+### 3. 部分配列だけをコピーで渡す場合
+
+$T(n)=2T(n/2)+cn+c'n$
+
+$a=2$、$b=2$、$f(n)=\theta(n)$
+
+$n^{\log_b a + \epsilon} = n^{\log_2 2 + \epsilon}$について$\epsilon = 0$に選べば$n=\Theta(n)$になります。
+
+よってマスター定理より$T(n)=\Theta(n\lg n)$が成立します。
+
+# 4-3
+
+## a
+
+$T(n)= 4T(n/3)+ n \lg n$
+
+$a=4$、$b=3$、$f(n)=n \lg n$
+
+$f(n) = \Theta(n \lg n)$
+
+$n^{\log_b a + \epsilon} = n^{\log_3 4 + \epsilon}$
+$n^{\log_3 4 + \epsilon} = n \lg n$、つまり$\log_3 4 + \epsilon = \log_n n \lg n = \lg (n \lg n)/\lg n = 1 + \lg \lg n/\lg n$に選べば、右辺2項目は十分大きなnに対して0になり、$\log_3 4$は1より大きいので$\epsilon < 0$となります。
+
+よってマスター定理より$T(n)=\Theta(n^{\log_3 4})$が成立します。
+
+## b
+（未解答）
+
+# 4-4
+（未解答）
+
+# 4-5
+（未解答）
+
+# 4-6
+（未解答）
 
 
 # 他の記事
 - [個人的勉強メモ「アルゴリズム・イントロダクション」をRustで実装する：2章](https://qiita.com/Kosuke_Matsui/items/eea26e88cd261173a292)
 - [個人的勉強メモ「アルゴリズム・イントロダクション」をRustで実装する：3章](https://qiita.com/Kosuke_Matsui/private/b424d8eb30dd16455b12)
 - [個人的勉強メモ「アルゴリズム・イントロダクション」をRustで実装する：4章](https://qiita.com/Kosuke_Matsui/private/3b93d6b8a7ee5e90a2b5)
+- [個人的勉強メモ「アルゴリズム・イントロダクション」をRustで実装する：6章](https://qiita.com/Kosuke_Matsui/private/8d1586a463a78081d533)
 
